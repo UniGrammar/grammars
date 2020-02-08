@@ -1,0 +1,130 @@
+meta:
+  id: metakit4_definition_string
+  title: Metakit 4 definition string (aka "description")
+  license: Unlicense
+  application: Metakit4
+  xref:
+    wikidata: Q230724
+  class: "LR(*)"
+
+doc: |
+  Metakit 4 is an embeddable database. It embeds strings known as `definition string`s that store the types of columns of a table.
+
+doc-ref: "format.html"
+#tests:
+#  - model: lines
+#    files:
+#      - "tests.txt"
+
+chars:
+  - id: SubFieldsStart
+    lit: '['
+  - id: SubFieldsEnd
+    lit: ']'
+  - id: Colon
+    lit: ':'
+  - id: OptionsSeparator
+    lit: ','
+  - id: IndirectMarker
+    lit: '^'
+  - id: OtherWordChars
+    alt:
+      - ref: OtherWordCharsOther
+      - ref: OtherWordCharsUpper
+      - ref: OtherWordCharsLower
+  - id: OtherWordCharsOther
+    alt:
+      - wellknown: "digits"
+      - lit: _
+  - id: OtherWordCharsUpper
+    alt:
+      - lit: A
+      - lit: C
+      - lit: E
+      - lit: G
+      - lit: H
+      - lit: J
+      - lit: K
+      - lit: L
+      - range: ["N", "R"]
+      - range: ["T", "Z"]
+  - id: OtherWordCharsLower
+    alt:
+      - lit: a
+      - lit: c
+      - lit: e
+      - lit: g
+      - lit: h
+      - lit: j
+      - lit: k
+      - lit: l
+      - range: ["n", "r"]
+      - range: ["t", "z"]
+
+  - id: TypeSpecifier
+    alt:
+      - ref: TypeSpecifierUpper
+      - ref: TypeSpecifierLower
+  - id: TypeSpecifierUpper
+    alt:
+      - lit: S
+      - lit: I
+      - lit: F
+      - lit: D
+      - lit: B
+      - lit: M
+  - id: TypeSpecifierLower
+    alt:
+      - lit: s
+      - lit: i
+      - lit: f
+      - lit: d
+      - lit: b
+      - lit: m
+fragmented:
+  - id: word
+    ref: wordPiece
+    min: 1
+  - id: wordPiece
+    alt:
+      - ref: TypeSpecifier
+      - ref: OtherWordChars
+        min: 1
+prods:
+  - id: subFields
+    template: delimited
+    part:
+      ref: scalarOrView
+    delimiter:
+      ref: OptionsSeparator
+    partName: subField
+  - id: scalarOrView
+    alt:
+      - cap: scalarF
+        ref: scalar
+      - cap: viewF
+        ref: view
+  - id: view
+    seq:
+      - cap: name
+        ref: word
+      - uncap:
+          ref: SubFieldsStart
+      - cap: bodyF
+        ref: body
+      - uncap:
+          ref: SubFieldsEnd
+  - id: scalar
+    seq:
+      - cap: name
+        ref: word
+      - uncap:
+          ref: Colon
+      - cap: typeF
+        ref: TypeSpecifier
+  - id: body
+    alt:
+      - cap: subFieldsF
+        ref: subFields
+      - cap: selfF
+        ref: IndirectMarker

@@ -1,0 +1,91 @@
+meta:
+  id: istc
+  title: ISTC
+  license: BSD
+  class: "LL(*)"
+
+-license-text: |
+  BSD License
+
+  Copyright (c) 2017, Tom Everett
+  All rights reserved.
+
+  Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+
+  1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+  2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+  3. Neither the name of Tom Everett nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
+
+  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+
+doc: |
+  An ANTLR4 grammar for [ISTC Numbers](https://en.wikipedia.org/wiki/International_Standard_Text_Code).
+
+tests:
+  - model: lines
+    files:
+      - "examples/example1.txt"
+
+chars:
+  - id: SEP
+    alt:
+      - lit: '-'
+      - lit: ' '
+  - id: CHAR
+    alt:
+      - range: ["A", "F"]
+      - range: ["0", "9"]
+  - id: StringChar
+    alt:
+      - range: ["a", "z"]
+      - range: ["A", "Z"]
+      - range: ["0", "9"]
+  - id: WS
+    wellknown: whitespace
+
+keywords:
+  - id: ISTC
+    lit: 'ISTC'
+
+prods:
+  - id: istc
+    seq:
+      - ref: ISTC
+      - ref: WS
+      - ref: registration
+      - ref: SEP
+      - ref: year
+      - ref: SEP
+      - ref: work
+      - ref: SEP
+      - ref: check
+
+  - id: registration
+    seq:
+      - ref: CHAR
+      - ref: CHAR
+      - ref: CHAR
+
+  - id: year
+    seq:
+      - ref: CHAR
+      - ref: CHAR
+      - ref: CHAR
+      - ref: CHAR
+
+  - id: work
+    seq:
+      - ref: CHAR
+      - ref: CHAR
+      - ref: CHAR
+      - ref: CHAR
+      - ref: CHAR
+      - ref: CHAR
+      - ref: CHAR
+      - ref: CHAR
+
+  - id: check
+    seq:
+      - ref: CHAR
+

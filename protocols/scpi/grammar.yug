@@ -1,0 +1,252 @@
+meta:
+  id: scpi
+  title: Standard Commands for Programmable Instruments
+  license: Unlicense
+  xref:
+    wikidata: Q386433
+doc: Describes the syntax used in PDFs of different instruments
+doc-ref: https://www.ivifoundation.org/docs/scpi-99.pdf
+
+tests:
+  - model: lines
+    files:
+      - "tests.txt"
+
+chars:
+  - id: WS
+    wellknown: whitespace
+
+  # basic.pg
+  - id: Digit
+    range: ["0", "9"]
+
+  - id: IdentifierCharWithoutDigits
+    alt:
+      - range: ["a", "z"]
+      - range: ["A", "Z"]
+      - lit: _
+
+  - id: OptionalStart
+    lit: '['
+  - id: OptionalEnd
+    lit: ']'
+  - id: ArgumentStart
+    lit: '<'
+  - id: ArgumentEnd
+    lit: '>'
+  - id: OpeningBrace
+    lit: "{"
+  - id: ClosingBrace
+    lit: "}"
+
+# args.pg
+  - id: Comma
+    lit: ","
+  - id: Dot
+    lit: "."
+  - id: AlternativeDelimiter
+    lit: "|"
+
+# scpi.pg
+  - id: QueryMarker
+    lit: '?'
+  - id: Prefix
+    lit: ':'
+  - id: SpecialPrefix
+    lit: '*'
+
+tokens:
+
+# basic.pg
+  - id: integer
+    ref: Digit
+    min: 1
+    prefer: shift
+
+  - id: identifierFragmentWithoutDigits
+    ref: IdentifierCharWithoutDigits
+    min: 1
+    prefer: shift
+
+  - id: WSS
+    ref: WS
+    min: 1
+
+  #args.pg
+  - id: number
+    seq:
+      - ref: integer
+      - ref: Dot
+      - opt:
+          ref: integer
+    #prefer: true
+
+fragmented:
+  - id: identifierFragment
+    alt:
+      - ref: identifierFragmentWithoutDigits
+      - ref: integer
+
+  - id: identifierOrStringConstant
+    ref: identifierFragment
+    min: 1
+
+prods:
+  - id: command
+    seq:
+      - cap: addr
+        ref: addrR
+      - cap: args
+        ref: argsSeparatedWithSpace_optional
+
+  - id: argsSeparatedWithSpace_optional
+    opt:
+      ref: argsSeparatedWithSpace
+
+  - id: argsSeparatedWithSpace
+    seq:
+      - ref: WSS
+      - cap: args
+        ref: argsR
+
+  # basic.pg
+  - id: argument
+    seq:
+      - ref: ArgumentStart
+      - cap: name
+        ref: identifierOrStringConstant
+      - ref: ArgumentEnd
+
+  - id: nameArgOrOptionalArg
+    alt:
+      - ref: argument
+      - ref: nameOptionalArg
+
+  - id: nameArgOrOptionalArg_optional
+    opt:
+      ref: nameArgOrOptionalArg
+    prefer: shift
+
+  - id: nameOptionalArg
+    seq:
+      - ref: OptionalStart
+      - ref: argument
+      - ref: OptionalEnd
+
+  - id: argsR
+    alt:
+      - ref: regularArgs
+      - ref: optionalArgs
+
+####### regular args ########
+
+  - id: regularArgs
+    seq:
+      - cap: first
+        ref: queryArg
+      - cap: rest
+        ref: restArgs
+
+  - id: argPart
+    seq:
+      - ref: Comma
+      - ref: WSS
+      - cap: arg
+        ref: queryArg
+      - opt:
+          ref: optionalArgsParts
+
+  - id: restArgs
+    ref: argPart
+    min: 0
+
+####### optional args ########
+
+  - id: optionalArgs
+    seq:
+      - ref: OptionalStart
+      - cap: args
+        ref: regularArgs
+      - ref: OptionalEnd
+
+  - id: optionalArgsParts
+    seq:
+      - ref: OptionalStart
+      - cap: args
+        ref: restArgs
+      - ref: OptionalEnd
+
+  - id: queryArg
+    alt:
+      - ref: argument
+      - ref: alternative
+      - ref: argInCurlyBraces
+
+  - id: argInCurlyBraces
+    seq:
+      - ref: OpeningBrace
+      - cap: arg
+        ref: queryArg
+      - ref: ClosingBrace
+
+  - id: alternative
+    seq:
+      - cap: first
+        ref: identifierOrStringConstant
+      - cap: delimiter
+        ref: AlternativeDelimiter
+      - cap: last
+        ref: identifierOrStringConstant
+    prefer: reduce
+
+  # scpi.pg
+  - id: addrR
+    seq:
+      - cap: cmdName
+        ref: cmdNameR
+      - cap: queryMarker
+        ref: optQueryMarker
+
+  - id: optQueryMarker
+    opt:
+      ref: QueryMarker
+
+  - id: addrToken
+    seq:
+      - ref: Prefix
+      - cap: name
+        ref: nameR
+
+  - id: addrPart
+    alt:
+      - ref: addrToken
+      - ref: optionalAddr
+
+  - id: addrPath
+    ref: addrPart
+    min: 1
+
+  - id: optionalAddr
+    seq:
+      - ref: OptionalStart
+      - cap: optionalPath
+        ref: addrPath
+      - ref: OptionalEnd
+
+  - id: special
+    seq:
+      - ref: SpecialPrefix
+      - cap: name
+        ref: nameR
+
+  - id: cmdNameR
+    alt:
+      - ref: special
+      - ref: addrPath
+
+  - id: nameR
+    seq:
+      - cap: name
+        ref: identifierOrStringConstant
+      - cap: arg
+        ref: nameArgOrOptionalArg_optional

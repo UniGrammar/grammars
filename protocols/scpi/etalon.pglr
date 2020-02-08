@@ -1,0 +1,53 @@
+command: addr=addr args=argsSeparatedWithSpace?;
+argsSeparatedWithSpace: whitespace args=args;
+
+//The default priority for rules is 10.
+args: regularArgs | optionalArgs;
+regularArgs: first=queryArg rest=restArgs?;
+optionalArgs: optionalStart args=regularArgs optionalEnd;
+
+argPart: regularArgPart | optionalArgsParts;
+regularArgPart: comma arg=queryArg;
+
+restArgs: argPart+;
+optionalArgsParts: optionalStart args=restArgs optionalEnd;
+
+queryArg: argument | alternative | argInCurlyBraces;
+
+argInCurlyBraces: "{" arg=queryArg "}";
+
+alternativeArg: queryArg | stringConstant | number;
+alternative: first=alternativeArg delimiter=alternativeDelimiter last=alternativeArg {left};
+
+addr: cmdName=cmdName queryMarker?=queryMarker?;
+
+addrToken: prefix=prefix name=name;
+addrPart: addrToken | optionalAddr;
+addrPath: addrPart+;
+optionalAddr: optionalStart optionalPath=addrPath optionalEnd;
+
+special: prefix=specialPrefix name=name;
+cmdName: special | addrPath;
+
+
+name: name=identifier arg=argOrOptionalArg?;
+
+argument: argumentStart name=identifier argumentEnd;
+argOrOptionalArg: argument | nameOptionalArg;
+nameOptionalArg: optionalStart argument optionalEnd;
+
+terminals
+queryMarker: "?";
+prefix: ":";
+specialPrefix: "*";
+comma: /,\s*/;
+number: /\d+(?:\.\d+)?/ {prefer};
+stringConstant: /[\da-zA-Z_]+/;
+alternativeDelimiter: "|";
+whitespace: /\s+/;
+
+identifier: /[\da-zA-Z_]+/;
+optionalStart: "[";
+optionalEnd: "]";
+argumentStart: "<";
+argumentEnd: ">";

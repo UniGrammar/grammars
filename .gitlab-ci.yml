@@ -1,0 +1,27 @@
+variables:
+  DOCKER_DRIVER: overlay2
+  SAST_ANALYZER_IMAGE_TAG: latest
+  SAST_DISABLE_DIND: "true"
+  SAST_CONFIDENCE_LEVEL: 5
+  CODECLIMATE_VERSION: latest
+
+.build:
+  image: registry.gitlab.com/UniGrammar/UniGrammar_grammars_CI_docker:latest
+  tags:
+    - shared
+    - linux
+  stage: build
+  interruptible: true
+  variables:
+    GIT_DEPTH: "1"
+    PYTHONUSERBASE: ${CI_PROJECT_DIR}/python_user_packages
+
+  before_script:
+    - export PATH="$PATH:$PYTHONUSERBASE/bin" # don't move into `variables`
+
+  script:
+    - echo not yet implemented
+
+  artifacts:
+    paths:
+      - transpiled_grammars

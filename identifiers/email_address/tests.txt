@@ -1,0 +1,9 @@
+tom@khubla.com
+very.common@example.com
+disposable.style.email.with+symbol@example.com
+other.email-with-dash@example.com
+x@example.com
+"much.more unusual"@example.com
+example-indeed@strange-example.com
+admin@mailserver1
+example@s.solutions

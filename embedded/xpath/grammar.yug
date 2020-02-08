@@ -1,0 +1,397 @@
+meta:
+  id: xpath
+  title: XPath 1.0
+  license: BSD
+  class: "LL(*)"
+
+-license-text: |
+  Written by Jan-Willem van den Broek
+  Version 1.0
+  
+  Do with this code as you will.
+  
+  Ported to Antlr4 by Tom Everett <tom@khubla.com>
+  BSD License
+  
+  Copyright (c) 2016, Tom Everett
+  All rights reserved.
+  
+  Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+  
+  1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+  2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+  3. Neither the name of Tom Everett nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
+  
+  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+
+doc: |
+    XPath 1.0 grammar. Should conform to the official spec at http://www.w3.org/TR/1999/REC-xpath-19991116. The grammar rules have been kept as close as possible to those in the spec, but some adjustmewnts were unavoidable. These were mainly removing left recursion (spec seems to be based on LR), and to deal with the double nature of the '*' token (node wildcard and multiplication operator). See also section 3.7 in the spec. These rule changes should make no difference to the strings accepted by the grammar.
+
+tests:
+  - model: lines
+    files:
+      - "tests.txt"
+
+chars:
+  - id: PATHSEP
+    lit: '/'
+  - id: LPAR
+    lit: '('
+  - id: RPAR
+    lit: ')'
+  - id: LBRAC
+    lit: '['
+  - id: RBRAC
+    lit: ']'
+  - id: MINUS
+    lit: '-'
+  - id: PLUS
+    lit: '+'
+  - id: DOT
+    lit: '.'
+  - id: MUL
+    lit: '*'
+  - id: AT
+    lit: '@'
+  - id: Dollar
+    lit: '$'
+  - id: COMMA
+    lit: ','
+  - id: PIPE
+    lit: '|'
+  - id: LESS
+    lit: '<'
+  - id: MORE_
+    lit: '>'
+  - id: COLON
+    lit: ':'
+  - id: APOS
+    lit: "'"
+  - id: QUOT
+    lit: '"'
+  - id: EQ
+    lit: '='
+  - id: WSC
+    alt:
+      - lit: ' '
+      - lit: '\t'
+      - lit: '\n'
+      - lit: '\r'
+  - id: Digit
+    range: ["0", "9"]
+
+  - id: NCNameStartChar
+    alt:
+      - range: ['A', 'Z']
+      - lit: '_'
+      - range: ['a', 'z']
+      - range: ['\u00C0', '\u00D6']
+      - range: ['\u00D8', '\u00F6']
+      - range: ['\u00F8', '\u02FF']
+      - range: ['\u0370', '\u037D']
+      - range: ['\u037F', '\u1FFF']
+      - range: ['\u200C', '\u200D']
+      - range: ['\u2070', '\u218F']
+      - range: ['\u2C00', '\u2FEF']
+      - range: ['\u3001', '\uD7FF']
+      - range: ['\uF900', '\uFDCF']
+      - range: ['\uFDF0', '\uFFFD']
+      - range: ['\u{10000}', '\u{EFFFF}']
+
+  - id: NCNameChar
+    alt:
+      - ref: NCNameStartChar
+      - ref: MINUS
+      - ref: DOT
+      - ref: Digit
+      - lit: '\u00B7'
+      - range: ['\u0300', '\u036F']
+      - range: ['\u203F', '\u2040']
+
+tokens:
+  Digits: Digit+
+  DOTDOT: DOT DOT;
+  LE: LESS EQ;
+  GE: MORE_ EQ;
+  CC: COLON COLON;
+  NCName  :  NCNameStartChar NCNameChar*;
+  Literal  :  QUOT ~QUOT* QUOT |  APOS ~APOS* APOS;
+  Whitespace:  WSC+;
+  ABRPATH: PATHSEP PATHSEP;
+  
+keywords:
+  AxisName:
+    - lit: 'ancestor'
+    - lit: 'ancestor-or-self'
+    - lit: 'attribute'
+    - lit: 'child'
+    - lit: 'descendant'
+    - lit: 'descendant-or-self'
+    - lit: 'following'
+    - lit: 'following-sibling'
+    - lit: 'namespace'
+    - lit: 'parent'
+    - lit: 'preceding'
+    - lit: 'preceding-sibling'
+    - lit: 'self'
+
+  NodeType:
+    - lit: 'comment'
+    - lit: 'text'
+    - lit: 'processing-instruction'
+    - lit: 'node'
+
+prods:
+  - id: locationPath
+    alt:
+      - ref: relativeLocationPath
+      - ref: absoluteLocationPathNoroot
+  - id: pathSepOrAbrPath
+    alt:
+      - ref: PATHSEP
+      - ref: ABRPATH
+
+  - id: absoluteLocationPathNoroot
+    seq:
+      - ref: pathSepOrAbrPath
+      - ref: relativeLocationPath
+
+  - id: relativeLocationPath
+    seq:
+      - ref: step
+      - ref: steps
+        min: 0
+
+  - id: steps
+    seq:
+      - ref: pathSepOrAbrPath
+      - ref: step
+
+  - id: step
+    alt:
+      - ref: step0
+      - ref: abbreviatedStep
+
+  - id: step
+    seq:
+      - ref: axisSpecifier
+      - ref: nodeTest
+      - ref: predicates
+
+  - id: predicates
+    seq:
+      - predicate
+        min: 0
+
+  - id: axisSpecifier
+    alt:
+      - seq:
+          - ref: AxisName
+          - ref: CC
+      - opt:
+          ref: AT
+
+  - id: nodeTest
+    alt:
+      - ref: nameTest
+      - seq:
+          - ref: NodeType
+          - ref: LPAR
+          - ref: RPAR
+      - seq:
+          - lit: 'processing-instruction'
+          - ref: LPAR
+          - ref: Literal
+          - ref: RPAR
+
+  - id: predicate
+    seq:
+      - ref: LBRAC
+      - ref: expr
+      - ref: RBRAC
+
+  - id: abbreviatedStep
+    alt:
+      - ref: DOT
+      - ref: DOTDOT
+
+  - id: expr
+    seq:
+      - ref: orExpr
+
+  - id: primaryExpr
+    alt:
+      - ref: variableReference
+      - ref: parentesedExpr
+      - ref: Literal
+      - ref: Number
+      - ref: functionCall
+
+  - id: parentesedExpr
+    seq:
+      - ref: LPAR
+      - ref: expr
+      - ref: RPAR
+
+  - id: functionCall
+    seq:
+      - ref: functionName
+      - ref: LPAR
+      - ref: optFuncArgs
+      - ref: RPAR
+
+  - id: optFuncArgs
+    seq:
+      - opt: ref: funcArgs
+
+
+  - id: funcArgs
+    template: delimited
+    part: ref: expr
+    delimitor: ref: COMMA
+
+  - id: exprNoRootWithPipe:
+    seq:
+      - lit: '|'
+      - ref: unionExprNoRoot
+
+  - id: unionExprNoRoot
+    - alt:
+      - seq:
+          - ref: pathExprNoRoot
+          - opt: ref: exprNoRootWithPipe
+      - seq:
+          - ref: PATHSEP
+          - ref: exprNoRootWithPipe
+
+  - id: pathExprNoRoot
+    - alt:
+      - ref: locationPath
+      - seq:
+          - ref: filterExpr
+          - opt:
+              seq:
+                - alt:
+                     - lit: '/'
+                     - lit: '//'
+                - ref: relativeLocationPath
+
+  - id: filterExpr
+    seq:
+      - ref: primaryExpr
+      - ref: predicates
+
+  - id: orExpr
+    template: delimited
+    part: ref: andExpr
+    delimitor: lit: 'or'
+
+  - id: andExpr
+    template: delimited
+    part: ref: equalityExpr
+    delimitor: lit: 'and'
+
+  - id: equalityExpr
+    template: delimited
+    part: ref: relationalExpr
+    delimitor:
+      alt:
+        lit: '='
+        lit: '!='
+
+  - id: relationalExpr
+    template: delimited
+    part: ref: additiveExpr
+    delimitor:
+      alt:
+        lit: '<'
+        lit: '>'
+        lit: '<='
+        lit: '>='
+
+  - id: additiveExpr
+    template: delimited
+    part: ref: multiplicativeExpr
+    delimitor:
+      alt:
+        lit: '+'
+        lit: '-'
+
+  - id: multiplicativeExpr
+    alt:
+      - seq:
+          - ref: unaryExprNoRoot
+          - opt:
+              seq:
+                - alt:
+                    - lit: '*'
+                    - lit: 'div'
+                    - lit: 'mod'
+                 - ref: multiplicativeExpr
+       - seq:
+           - ref: PATHSEP
+           - opt:
+               seq:
+                 - alt:
+                     - lit: 'div'
+                     - lit: 'mod'
+                  - ref: multiplicativeExpr
+
+  - id: unaryExprNoRoot
+    seq:
+      - lit: '-'
+        min: 0
+      - ref: unionExprNoRoot
+
+  - id: qName
+    seq:
+      - ref: nCName
+      - opt:
+          seq:
+            - lit: ':'
+            - ref: nCName
+
+# Does not match NodeType, as per spec.
+  - id: functionName
+    alt:
+      - seq:
+          - ref: nCName
+          - ref: COLON
+          - ref: nCName
+      - ref: NCName
+      - ref: AxisName
+
+
+  - id: variableReference
+    seq:
+      - ref: Dollar
+      - ref: qName
+
+  - id: nameTest
+    alt:
+      - ref: MUL
+      - seq:
+          - ref: nCName
+          - ref: COLON
+          - ref: MUL
+      - ref: qName
+
+  - id: nCName
+    alt:
+      - ref: NCName
+      - ref: AxisName
+      - ref: NodeType
+
+  - id: Number
+    alt:
+      - seq:
+          - ref: Digits
+          - opt:
+              seq:
+                - ref: DOT
+                - opt: ref: Digits
+      - seq:
+          - ref: DOT
+          - ref: Digits
+
