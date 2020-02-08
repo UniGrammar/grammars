@@ -1,0 +1,3 @@
+/a/b/c
+foo:comment()
+$comment

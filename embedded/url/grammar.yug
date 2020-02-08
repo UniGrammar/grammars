@@ -1,0 +1,280 @@
+meta:
+  id: URI
+  title: Uniform resource identifier
+  license: BSD
+  class: "LL(*)"
+
+-license-text: |
+  BSD License
+  
+  Copyright (c) 2016, Tom Everett
+  All rights reserved.
+  
+  Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+  
+  1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+  2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+  3. Neither the name of Tom Everett nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
+  
+  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+
+doc: |
+  A grammar for [URLs](https://en.wikipedia.org/wiki/Uniform_Resource_Locator). 
+  scheme:[//[user:password@]host[:port]][/]path[?query][#fragment]
+
+tests:
+  - model: lines
+    files:
+      - "tests.txt"
+
+chars:
+  - id: NewLine
+    lit: "\n"
+  - id: WS
+    alt:
+      - lit: "\t"
+      - lit: "\r"
+      - ref: NewLine
+  - id: Digit
+    range: ["0", "9"]
+  - id: HexDigit
+    alt:
+      - ref: Digit
+      - range: ["a", "f"]
+      - range: ["A", "F"]
+
+  - id: StringBaseChar
+    alt:
+      - ref: HexDigit
+      - range: ["g", "z"]
+      - range: ["G", "Z"]
+
+  - id: StringFirstChar
+    alt:
+      - ref: StringBaseChar
+      - lit: Tilda
+
+  - id: StringChar
+    alt:
+      - ref: StringBaseChar
+      - lit: Dot
+      - lit: '+'
+      - lit: '_'
+
+  - id: Semicolon
+    lit: ';'
+  - id: Quote
+    lit: '"'
+  - id: Percent
+    lit: '%'
+  - id: Tilda
+    lit: '~'
+  - id: Slash
+    lit: '/'
+  - id: Colon
+    lit: ':'
+  - id: Dot
+    lit: '.'
+  - id: At
+    lit: '@'
+  - id: Hash
+    lit: '#'
+  - id: QMark
+    lit: '?'
+  - id: Amp
+    lit: '&'
+  - id: Eq
+    lit: '='
+  - id: OpeningSqBrace
+    lit: '['
+  - id: ClosingSqBrace
+    lit: ']'
+
+tokens:
+  - id: HexPiece
+    seq:
+      - Percent
+      - HexDigit
+      - HexDigit
+
+  - id: HEX
+    ref: HexPiece
+    min: 1
+
+  - id: StringPiece1
+    seq:
+      - ref: StringFirstChar
+      - ref: StringChar
+        min: 0
+
+  - id: StringPiece
+    alt:
+      - ref: StringPiece1
+      - ref: HEX
+
+  #STRING: ([a-zA-Z~0-9] | HEX) ([a-zA-Z0-9.+-] | HEX)*;
+  - id: STRING
+    ref: StringPiece
+    min: 1
+
+prods:
+  - id: uri
+    seq:
+      - cap: scheme
+        ref: STRING
+      - ref: Colon
+      - ref: Slash
+      - ref: Slash
+      - cap: login
+        ref: login
+      - cap: host
+        ref: host
+      - cap: portSpec
+        opt:
+          ref: portSpec
+      - cap: pathSpec
+        opt:
+          ref: pathSpec
+
+      - cap: query
+        opt:
+          ref: query
+      - cap: frag
+        opt:
+          ref: frag
+
+  - id: portSpec
+    seq:
+      - ref: Colon
+      - cap: port
+        ref: DIGITS
+
+  - id: pathSpec
+    seq:
+      - ref: Slash
+      - cap: path
+        opt:
+          ref: path
+
+  - id: host
+    seq:
+      - opt:
+          ref: Slash
+      - cap: hostname
+        ref: hostname
+
+  - id: hostname
+    alt:
+      - ref: domainNameOrIPv4Host
+      - ref: iPv6Host
+
+  - id: domainNameOrIPv4Host
+    seq:
+      - ref: STRING
+      - ref: domainNameCont
+        min: 0
+
+  - id: domainNameCont
+    seq:
+      - ref: Dot
+      - ref: STRING
+
+  - id: iPv6Host
+    seq:
+      - ref: OpeningSqBrace
+      - ref: v6host
+      - ref: ClosingSqBrace
+
+  - id: v6host
+    seq:
+      - opt:
+          ref: v6hostPart1
+      - ref: stringOrDigits
+      - ref: v6hostPart3
+        min: 0
+
+  - id: v6hostPart1
+    seq:
+      - ref: Colon
+      - ref: Colon
+
+  - id: stringOrDigits
+    alt:
+      - ref: STRING
+      - ref: DIGITS
+
+  - id: v6hostPart3
+    alt:
+      - ref: v6hostPart31
+      - ref: stringOrDigits
+
+  - id: v6hostPart31
+    alt:
+      - ref: Colon
+      - ref: v6hostPart1
+
+  - id: path
+    seq:
+      - ref: STRING
+      - ref: pathPart
+        min: 0
+      - opt:
+          ref: Slash
+
+  - id: pathPart
+    seq:
+      - ref: Slash
+      - ref: STRING
+
+  - id: login
+    seq:
+      - cap: user
+        ref: STRING
+      - cap: passwordPart
+        opt:
+          ref: passwordPart
+      - ref: At
+
+  - id: passwordPart
+    seq:
+      - ref: Colon
+      - cap: password
+        ref: STRING
+
+  - id: frag
+    seq:
+      - ref: Hash
+      - ref: stringOrDigits
+
+  - id: query
+    seq:
+      - ref: QMark
+      - ref: search
+
+  - id: search
+    seq:
+      - ref: searchParameter
+      - ref: additionalSearchParameter
+        min: 0
+
+  - id: additionalSearchParameter
+    seq:
+      - ref: Amp
+      - ref: searchParameter
+
+  - id: searchParameter
+    seq:
+      - ref: STRING
+      - opt:
+          ref: searchParameterOptPart
+
+  - id: searchParameterOptPart
+    seq:
+      - ref: Eq
+      - ref: stringOrDigitsOrHex
+
+  - id: stringOrDigitsOrHex
+    alt:
+      - ref: stringOrDigits
+      - ref: HEX

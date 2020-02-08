@@ -1,0 +1,5 @@
+(upnp:class = "object.container.album.musicAlbum" and dc:title contains "cap \"a\"")
+upnp:class derivedfrom "object.item.audioItem.musicTrack" and (upnp:album contains "FindThis")
+upnp:class derivedfrom "object.item.audioItem.musicTrack" and (upnp:artist contains "FindThis")
+upnp:class derivedfrom "object.item.audioItem.musicTrack" and (upnp:genre contains "FindThis")
+upnp:class derivedfrom "object.item.audioItem.musicTrack" and (dc:title = "FindThis")
